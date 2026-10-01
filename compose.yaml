@@ -1,0 +1,39 @@
+services:
+  api:
+    build: .
+    ports: ["127.0.0.1:8001:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://demo:demo@db:5432/operations
+      REDIS_URL: redis://redis:6379/0
+      MOCK_AUTOSTART: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: operations
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo -d operations"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.4.3-alpine
+    command: redis-server --appendonly yes
+    ports: ["127.0.0.1:6379:6379"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  postgres_data:
+  redis_data:
