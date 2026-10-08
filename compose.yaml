@@ -2,28 +2,24 @@ services:
   api:
     build: .
     ports: ["127.0.0.1:8001:8000"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
     environment:
-      DATABASE_URL: postgresql+psycopg://demo:demo@db:5432/operations
+      DATABASE_URL: sqlite:////data/operations-v2.db
       REDIS_URL: redis://redis:6379/0
-      MOCK_AUTOSTART: "true"
+      MOCK_AUTOSTART: "${MOCK_AUTOSTART:-false}"
+      MOCK_EVENTS_PER_SECOND: "${MOCK_EVENTS_PER_SECOND:-50}"
+      BACKLOG_THRESHOLD: "${BACKLOG_THRESHOLD:-30}"
+      DELAY_MINUTES: "${DELAY_MINUTES:-30}"
+      VERIFICATION_ENABLED: "${VERIFICATION_ENABLED:-false}"
+      AUTH_COOKIE_SECURE: "${AUTH_COOKIE_SECURE:-false}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:?Set ADMIN_USERNAME in .env}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      ADMIN_PASSWORD_HASH: "${ADMIN_PASSWORD_HASH:-}"
+    volumes: ["sqlite_data:/data"]
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: demo
-      POSTGRES_PASSWORD: demo
-      POSTGRES_DB: operations
-    ports: ["127.0.0.1:5432:5432"]
-    volumes: ["postgres_data:/var/lib/postgresql/data"]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U demo -d operations"]
-      interval: 2s
-      timeout: 3s
-      retries: 20
   redis:
     image: redis:7.4.3-alpine
     command: redis-server --appendonly yes
@@ -35,5 +31,5 @@ services:
       timeout: 3s
       retries: 20
 volumes:
-  postgres_data:
+  sqlite_data:
   redis_data:
