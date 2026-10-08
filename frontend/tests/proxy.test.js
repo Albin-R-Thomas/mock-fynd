@@ -88,3 +88,16 @@ test("proxy preserves session cookies, CSRF and backend rejection", async () => 
     else process.env.BACKEND_URL = previous;
   }
 });
+
+// Nested Vercel routes need concrete filesystem entries: the generic dynamic
+// function matched /api/health in production but not /api/auth/session.
+test("nested deployed routes export the protected proxy", async () => {
+  for (const route of [
+    "auth/login", "auth/session", "auth/logout",
+    "mock/start", "mock/stop", "mock/seed",
+    "verification/cases", "verification/run/[case]",
+  ]) {
+    const handler = await import(`../api/${route}.js`);
+    assert.equal(handler.default, proxy, route);
+  }
+});
